@@ -1,0 +1,3 @@
+[submodule "vielfalt"]
+	path = vielfalt
+	url = https://github.com/add1609/vielfalt.git

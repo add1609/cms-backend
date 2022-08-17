@@ -1,0 +1,9 @@
+.idea/
+.hugo-build-lock
+
+.env*
+
+simplecert/
+letsencrypt/
+
+main

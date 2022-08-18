@@ -53,14 +53,9 @@ func (c *Client) reader() {
 	c.conn.SetReadLimit(int64(upgrader.ReadBufferSize))
 	c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait)); return nil })
-	for {
-		_, msg, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Printf("[INFO] [id=%s] [pid=%v] in reader(): %v", c.id, c.hugoPid, err)
-			break
-		}
-		log.Printf("[INFO] [id=%s] [pid=%v] Message recevied: %s", c.id, c.hugoPid, string(msg))
-	}
+
+	// Main loop
+	c.handleRoutes()
 }
 
 // From Client to Frontend.

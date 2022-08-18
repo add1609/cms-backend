@@ -43,9 +43,11 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
+			// The $connect route
 			h.clients[client] = true
 			client.send <- []byte(client.url)
 		case client := <-h.unregister:
+			// The $disconnect route
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)

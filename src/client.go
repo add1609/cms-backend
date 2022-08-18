@@ -136,7 +136,7 @@ func setupWs(envReadSize, envWriteSize, envCheckOrigin, envOriginHost string) {
 	upgrader.ReadBufferSize = rBufferSize
 	upgrader.WriteBufferSize = wBufferSize
 	upgrader.CheckOrigin = func(req *http.Request) bool {
-		if envCheckOrigin == "false" {
+		if originHost == "" {
 			return true
 		}
 		origin := req.Header["Origin"]

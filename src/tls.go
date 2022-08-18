@@ -17,6 +17,9 @@ import (
 var originHost string
 
 func CheckOrigin(req *http.Request) bool {
+	if originHost == "" {
+		return true
+	}
 	origin := req.Header["Origin"]
 	if len(origin) == 0 {
 		return false
@@ -37,6 +40,8 @@ func redircetHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		log.Printf("[INFO] Redirecting client to HTTPS: %s, (%s), UserAgent: %s", target, host, req.UserAgent())
 		http.Redirect(w, req, target, http.StatusPermanentRedirect)
+	} else {
+		w.WriteHeader(403)
 	}
 }
 
@@ -61,6 +66,7 @@ func SetupTLS(envDomain, envCacheDir, envEmail, envHTTP, envOriginHost string) {
 	cfg.CacheDir = envCacheDir
 	cfg.SSLEmail = envEmail
 	cfg.HTTPAddress = envHTTP
+	originHost = envOriginHost
 
 	// this function will be called just before certificate renewal starts and is used to gracefully stop the service
 	// (we need to temporarily free port 443 in order to complete the TLS challenge)

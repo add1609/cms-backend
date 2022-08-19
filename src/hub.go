@@ -1,6 +1,7 @@
 package src
 
 import (
+	"log"
 	"time"
 )
 
@@ -45,12 +46,15 @@ func (h *Hub) Run() {
 		case client := <-h.register:
 			// The $connect route
 			h.clients[client] = true
-			client.send <- []byte(client.url)
+			log.Printf("[%v] [INFO] [id=%s] [pid=%v] ADD CLIENT",
+				len(h.clients), client.id, client.hugoPid)
 		case client := <-h.unregister:
 			// The $disconnect route
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
-				close(client.send)
+				close(client.resChan)
+				log.Printf("[%v] [INFO] [id=%s] [pid=%v] DEL CLIENT",
+					len(h.clients), client.id, client.hugoPid)
 			}
 		}
 	}

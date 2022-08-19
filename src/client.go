@@ -23,7 +23,7 @@ type Client struct {
 	conn *websocket.Conn
 
 	// The Client's buffered channel of outbound messages.
-	send chan []byte
+	resChan chan responseMessage
 
 	// The Client's id.
 	id string
@@ -53,45 +53,35 @@ func (c *Client) reader() {
 	c.conn.SetReadLimit(int64(upgrader.ReadBufferSize))
 	c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait)); return nil })
-	for {
-		_, msg, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Printf("[INFO] [id=%s] [pid=%v] in reader(): %v", c.id, c.hugoPid, err)
-			break
-		}
-		log.Printf("[INFO] [id=%s] [pid=%v] Message recevied: %s", c.id, c.hugoPid, string(msg))
-	}
+
+	// Main loop
+	c.handleRequest()
 }
 
 // From Client to Frontend.
-func (c *Client) writePump() {
+func (c *Client) writer() {
 	pingTicker := time.NewTicker(c.hub.pingPeriod)
 	defer func() {
 		pingTicker.Stop()
+		c.hub.unregister <- c
 		c.conn.Close()
 	}()
+
+	// Main loop
 	for {
 		select {
-		case message, ok := <-c.send:
+		case resMsg, ok := <-c.resChan:
 			c.conn.SetWriteDeadline(time.Now().Add(c.hub.writeWait))
 			if !ok {
 				// The hub closed the channel.
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			if err := w.Close(); err != nil {
-				return
-			}
+			c.handleResponse(resMsg)
 		case <-pingTicker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(c.hub.writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				log.Printf("[ERROR] [id=%s] [pid=%v] in writer(): %v", c.id, c.hugoPid, err)
 				return
 			}
 		}
@@ -106,7 +96,7 @@ func (c *Client) startHugo() {
 		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
 	}
 	c.hugoPid = cmd.Process.Pid
-	log.Printf("[INFO] [id=%s] [pid=%v] Starting hugo server", c.id, c.hugoPid)
+	log.Printf("[%v] [INFO] [id=%s] [pid=%v] Starting hugo server", len(c.hub.clients), c.id, c.hugoPid)
 	if err := cmd.Wait(); err != nil {
 		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
 	}
@@ -114,7 +104,7 @@ func (c *Client) startHugo() {
 
 func (c *Client) stopHugo() {
 	if c.hugoPid != 0 {
-		log.Printf("[INFO] [id=%s] [pid=%v] Stopping hugo server", c.id, c.hugoPid)
+		log.Printf("[%v] [INFO] [id=%s] [pid=%v] Stopping hugo server", len(c.hub.clients), c.id, c.hugoPid)
 		cmd := exec.Command("kill", "-s", "INT", strconv.Itoa(c.hugoPid))
 		if err := cmd.Run(); err != nil {
 			log.Printf("[ERROR] [id=%s] [pid=%v] in stopHugo(): %v", c.id, c.hugoPid, err)
@@ -124,7 +114,7 @@ func (c *Client) stopHugo() {
 }
 
 // setupWs sets up some parameters whenever ServeWs is called.
-func setupWs(envReadSize, envWriteSize, envCheckOrigin, envOriginHost string) {
+func setupWs(envReadSize, envWriteSize, envOriginHost string) {
 	rBufferSize, err := strconv.Atoi(envReadSize)
 	if err != nil {
 		rBufferSize = 1024
@@ -153,27 +143,22 @@ func setupWs(envReadSize, envWriteSize, envCheckOrigin, envOriginHost string) {
 
 // ServeWs handles websocket requests from the frontend.
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
-	setupWs(
-		hub.env["WS_READ_BUFFER_SIZE"],
-		hub.env["WS_WRITE_BUFFER_SIZE"],
-		hub.env["WS_CHECK_ORIGIN"],
-		hub.env["WS_CHECK_ORIGIN_HOST"],
-	)
+	setupWs(hub.env["WS_READ_BUFFER_SIZE"], hub.env["WS_WRITE_BUFFER_SIZE"], hub.env["WS_CHECK_ORIGIN_HOST"])
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[ERROR] in upgrader.Upgrade(): %v", err)
 		return
 	}
 	client := &Client{
-		hub:  hub,
-		conn: conn,
-		send: make(chan []byte, 256),
+		hub:     hub,
+		conn:    conn,
+		resChan: make(chan responseMessage, 32),
 	}
 	client.genId()
 	client.url = hub.env["HUGO_BASE_URL"] + client.id + "/preview/"
 	client.hub.register <- client
 
 	go client.reader()
-	go client.writePump()
-	go client.startHugo()
+	go client.writer()
+	// go client.startHugo()
 }

@@ -96,7 +96,7 @@ func (c *Client) startHugo() {
 		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
 	}
 	c.hugoPid = cmd.Process.Pid
-	log.Printf("[%v] [INFO] [id=%s] [pid=%v] Starting hugo server", len(c.hub.clients), c.id, c.hugoPid)
+	log.Printf("[INFO] [%v] [id=%s] [pid=%v] Starting hugo server", len(c.hub.clients), c.id, c.hugoPid)
 	if err := cmd.Wait(); err != nil {
 		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
 	}
@@ -104,7 +104,7 @@ func (c *Client) startHugo() {
 
 func (c *Client) stopHugo() {
 	if c.hugoPid != 0 {
-		log.Printf("[%v] [INFO] [id=%s] [pid=%v] Stopping hugo server", len(c.hub.clients), c.id, c.hugoPid)
+		log.Printf("[INFO] [%v] [id=%s] [pid=%v] Stopping hugo server", len(c.hub.clients), c.id, c.hugoPid)
 		cmd := exec.Command("kill", "-s", "INT", strconv.Itoa(c.hugoPid))
 		if err := cmd.Run(); err != nil {
 			log.Printf("[ERROR] [id=%s] [pid=%v] in stopHugo(): %v", c.id, c.hugoPid, err)

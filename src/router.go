@@ -21,7 +21,7 @@ func (c *Client) handleRequest() {
 	for {
 		_, msg, err := c.conn.ReadMessage()
 		if err != nil {
-			log.Printf("[%v] [INFO] [id=%s] [pid=%v] in handleRoutes(): %s", len(c.hub.clients), c.id, c.hugoPid, err.Error())
+			log.Printf("[INFO] [%v] [id=%s] [pid=%v] %s", len(c.hub.clients), c.id, c.hugoPid, err.Error())
 			break
 		}
 		var msgStr bytes.Buffer
@@ -30,33 +30,35 @@ func (c *Client) handleRequest() {
 			log.Printf("[ERROR] [id=%s] [pid=%v] in handleRoutes(): %v", c.id, c.hugoPid, err)
 			break
 		}
-		log.Printf("[%v] [INFO] [id=%s] [pid=%v] REQ: %s", len(c.hub.clients), c.id, c.hugoPid, &msgStr)
 
 		var reqMsg requestMessage
 		err = json.Unmarshal(msg, &reqMsg)
 		if err != nil {
 			log.Printf("[ERROR] [id=%s] [pid=%v] in handleRoutes(): %v", c.id, c.hugoPid, err)
-			break
-		}
-		switch reqMsg.Action {
-		case "reqPreviewUrl":
-			{
-				c.resChan <- responseMessage{
-					Action:  "resPreviewUrl",
-					Success: true,
-					Payload: map[string]interface{}{
-						"previewUrl": c.url,
-					},
+		} else if reqMsg.Action == "" || reqMsg.Payload == nil {
+			log.Printf("[INFO] [%v] [id=%s] [pid=%v] BAD REQ: %v", len(c.hub.clients), c.id, c.hugoPid, &msgStr)
+		} else {
+			log.Printf("[INFO] [%v] [id=%s] [pid=%v] REQ: %s", len(c.hub.clients), c.id, c.hugoPid, &msgStr)
+			switch reqMsg.Action {
+			case "reqPreviewUrl":
+				{
+					c.resChan <- responseMessage{
+						Action:  "resPreviewUrl",
+						Success: true,
+						Payload: map[string]interface{}{
+							"previewUrl": c.url,
+						},
+					}
 				}
-			}
-		case "reqClientId":
-			{
-				c.resChan <- responseMessage{
-					Action:  "resClientId",
-					Success: true,
-					Payload: map[string]interface{}{
-						"id": c.id,
-					},
+			case "reqClientId":
+				{
+					c.resChan <- responseMessage{
+						Action:  "resClientId",
+						Success: true,
+						Payload: map[string]interface{}{
+							"id": c.id,
+						},
+					}
 				}
 			}
 		}
@@ -81,5 +83,5 @@ func (c *Client) handleResponse(resMsg responseMessage) {
 		log.Printf("[ERROR] [id=%s] [pid=%v] in handleSend(): %v", c.id, c.hugoPid, err)
 		return
 	}
-	log.Printf("[%v] [INFO] [id=%s] [pid=%v] RES: %s", len(c.hub.clients), c.id, c.hugoPid, msg)
+	log.Printf("[INFO] [%v] [id=%s] [pid=%v] RES: %s", len(c.hub.clients), c.id, c.hugoPid, msg)
 }

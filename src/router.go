@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
+	"os/exec"
+	"strconv"
 )
 
 type requestMessage struct {
@@ -15,6 +17,18 @@ type responseMessage struct {
 	Action  string                 `json:"action"`
 	Success bool                   `json:"success"`
 	Payload map[string]interface{} `json:"payload"`
+}
+
+func parseFileTree(byteSlice []byte) map[string]interface{} {
+	outSlice := bytes.Split(byteSlice, []byte("\n"))
+	outMap := map[string]interface{}{}
+	for i, element := range outSlice {
+		if string(element) != "" {
+			outMap[strconv.Itoa(i)] = string(element)
+		}
+	}
+	delete(outMap, "0")
+	return outMap
 }
 
 func (c *Client) handleRequest() {
@@ -57,6 +71,38 @@ func (c *Client) handleRequest() {
 						Success: true,
 						Payload: map[string]interface{}{
 							"id": c.id,
+						},
+					}
+				}
+			case "reqAllFiles":
+				{
+					out, err := exec.Command("git", "submodule", "foreach", "git", "ls-files", "content/").Output()
+					if err != nil {
+						log.Printf("[ERROR] [id=%s] [pid=%v] in handleRoutes(): %v", c.id, c.hugoPid, err)
+						return
+					}
+					outTree := parseFileTree(out)
+					c.resChan <- responseMessage{
+						Action:  "resAllFiles",
+						Success: true,
+						Payload: map[string]interface{}{
+							"files": outTree,
+						},
+					}
+				}
+			case "reqModFiles":
+				{
+					out, err := exec.Command("git", "submodule", "foreach", "git", "ls-files", "-m", "content/").Output()
+					if err != nil {
+						log.Printf("[ERROR] [id=%s] [pid=%v] in handleRoutes(): %v", c.id, c.hugoPid, err)
+						return
+					}
+					outTree := parseFileTree(out)
+					c.resChan <- responseMessage{
+						Action:  "resModFiles",
+						Success: true,
+						Payload: map[string]interface{}{
+							"files": outTree,
 						},
 					}
 				}

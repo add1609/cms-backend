@@ -1,10 +1,11 @@
 package main
 
 import (
-	"cms-backend/src"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
+
+	"cms-backend/src"
+	"github.com/joho/godotenv"
 )
 
 func main() {

@@ -3,10 +3,11 @@ package src
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"log"
 	"os/exec"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 type requestMessage struct {

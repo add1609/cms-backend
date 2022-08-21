@@ -54,14 +54,28 @@ func (c *Client) handleRequest() {
 		} else {
 			log.Printf("[INFO] [%v] [id=%s] [pid=%v] REQ: %s", len(c.hub.clients), c.id, c.hugoPid, &msgStr)
 			switch reqMsg.Action {
-			case "reqPreviewUrl":
+			case "reqStartHugo":
 				{
+					if c.hugoPid == 0 {
+						go c.startHugo()
+					}
 					c.resChan <- responseMessage{
-						Action:  "resPreviewUrl",
+						Action:  "resStartHugo",
 						Success: true,
 						Payload: map[string]interface{}{
 							"previewUrl": c.url,
 						},
+					}
+				}
+			case "reqStopHugo":
+				{
+					if c.hugoPid != 0 {
+						c.stopHugo()
+					}
+					c.resChan <- responseMessage{
+						Action:  "resStopHugo",
+						Success: true,
+						Payload: map[string]interface{}{},
 					}
 				}
 			case "reqClientId":

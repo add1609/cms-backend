@@ -81,7 +81,8 @@ func (c *Client) writer() {
 		case <-pingTicker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(c.hub.writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				log.Printf("[ERROR] [id=%s] [pid=%v] in writer(): %v", c.id, c.hugoPid, err)
+				log.Printf("[ERROR] [%v] [id=%s] [pid=%v] in writer(): %v",
+					len(c.hub.clients), c.id, c.hugoPid, err)
 				return
 			}
 		}
@@ -89,16 +90,19 @@ func (c *Client) writer() {
 }
 
 func (c *Client) startHugo() {
-	cmd := exec.Command("hugo", "server", "--baseURL", c.url, "--bind",
-		c.hub.env["HUGO_BIND"], "--port", c.id, "--source", c.hub.env["HUGO_SOURCE"])
+	cmd := exec.Command("hugo", "server", "--noBuildLock", "--gc", "--minify",
+		"--baseURL", c.url, "--bind", c.hub.env["HUGO_BIND"], "--port", c.id, "--source", c.hub.env["HUGO_SOURCE"])
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
+		log.Printf("[ERROR] [%v] [id=%s] [pid=%v] in startHugo(): %v",
+			len(c.hub.clients), c.id, c.hugoPid, err)
+		return
 	}
 	c.hugoPid = cmd.Process.Pid
 	log.Printf("[INFO] [%v] [id=%s] [pid=%v] Starting hugo server", len(c.hub.clients), c.id, c.hugoPid)
 	if err := cmd.Wait(); err != nil {
-		log.Printf("[ERROR] [id=%s] [pid=%v] in startHugo(): %v", c.id, c.hugoPid, err)
+		log.Printf("[ERROR] [%v] [id=%s] [pid=%v] in startHugo(): %v",
+			len(c.hub.clients), c.id, c.hugoPid, err)
 	}
 }
 
@@ -107,7 +111,8 @@ func (c *Client) stopHugo() {
 		log.Printf("[INFO] [%v] [id=%s] [pid=%v] Stopping hugo server", len(c.hub.clients), c.id, c.hugoPid)
 		cmd := exec.Command("kill", "-s", "INT", strconv.Itoa(c.hugoPid))
 		if err := cmd.Run(); err != nil {
-			log.Printf("[ERROR] [id=%s] [pid=%v] in stopHugo(): %v", c.id, c.hugoPid, err)
+			log.Printf("[ERROR] [%v] [id=%s] [pid=%v] in startHugo(): %v",
+				len(c.hub.clients), c.id, c.hugoPid, err)
 		}
 		c.hugoPid = 0
 	}
@@ -146,7 +151,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	setupWs(hub.env["WS_READ_BUFFER_SIZE"], hub.env["WS_WRITE_BUFFER_SIZE"], hub.env["WS_CHECK_ORIGIN_HOST"])
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("[ERROR] in upgrader.Upgrade(): %v", err)
+		log.Printf("[ERROR] [%v] [id=%s] [pid=%v] in upgrader.Upgrade(): %v", 0, "0", 0, err)
 		return
 	}
 	client := &Client{
@@ -160,5 +165,4 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	go client.reader()
 	go client.writer()
-	// go client.startHugo()
 }

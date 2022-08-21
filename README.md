@@ -48,12 +48,12 @@ Server response:
 }
 ```
 
-### reqPreviewUrl
+### reqStartHugo
 Client request:
 
 ```json
 {
-    "action": "reqPreviewUrl",
+    "action": "reqStartHugo",
     "payload": {}
 }
 ```
@@ -62,11 +62,31 @@ Server response:
 
 ```json
 {
-   "action": "resPreviewUrl",
+   "action": "resStartHugo",
    "success": true,
    "payload": {
       "previewUrl": "http://192.168.2.110:5408/preview/"
    }
+}
+```
+
+### reqStopHugo
+Client request:
+
+```json
+{
+    "action": "reqStopHugo",
+    "payload": {}
+}
+```
+
+Server response:
+
+```json
+{
+   "action": "resStopHugo",
+   "success": true,
+   "payload": {}
 }
 ```
 
@@ -88,14 +108,81 @@ Server response:
    "success": true,
    "payload": {
       "files": {
-         "1": "content/de/archives.md",
-         "2": "content/de/categories/_index.md",
-         "3": "content/de/posts/about/index.md",
-         "4": "content/de/search.md",
-         "5": "content/en/archives.md",
-         "6": "content/en/categories/_index.md",
-         "7": "content/en/posts/about/index.md",
-         "8": "content/en/search.md"
+         "Name": "content",
+         "Path": "./vielfalt/content/",
+         "IsDir": true,
+         "Size": 4096,
+         "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+         "Children": [
+            {
+               "Name": "de",
+               "Path": "vielfalt/content/de",
+               "IsDir": true,
+               "Size": 4096,
+               "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+               "Children": [
+                  {
+                     "Name": "archives.md",
+                     "Path": "vielfalt/content/de/archives.md",
+                     "IsDir": false,
+                     "Size": 43,
+                     "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                     "Children": []
+                  },
+                  {
+                     "Name": "categories",
+                     "Path": "vielfalt/content/de/categories",
+                     "IsDir": true,
+                     "Size": 4096,
+                     "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                     "Children": [
+                        {
+                           "Name": "_index.md",
+                           "Path": "vielfalt/content/de/categories/_index.md",
+                           "IsDir": false,
+                           "Size": 28,
+                           "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                           "Children": []
+                        }
+                     ]
+                  },
+                  {
+                     "Name": "posts",
+                     "Path": "vielfalt/content/de/posts",
+                     "IsDir": true,
+                     "Size": 4096,
+                     "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                     "Children": [
+                        {
+                           "Name": "about",
+                           "Path": "vielfalt/content/de/posts/about",
+                           "IsDir": true,
+                           "Size": 4096,
+                           "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                           "Children": [
+                              {
+                                 "Name": "index.md",
+                                 "Path": "vielfalt/content/de/posts/about/index.md",
+                                 "IsDir": false,
+                                 "Size": 1868,
+                                 "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                                 "Children": []
+                              }
+                           ]
+                        }
+                     ]
+                  },
+                  {
+                     "Name": "search.md",
+                     "Path": "vielfalt/content/de/search.md",
+                     "IsDir": false,
+                     "Size": 41,
+                     "ModifiedTime": "2022-08-21T06:41:32.797616574+02:00",
+                     "Children": []
+                  }
+               ]
+            }
+         ]
       }
    }
 }

@@ -90,7 +90,7 @@ func (c *Client) writer() {
 }
 
 func (c *Client) startHugo() {
-	cmd := exec.Command("hugo", "server", "--noBuildLock", "--gc", "--minify",
+	cmd := exec.Command("hugo", "server", "--gc", "--minify",
 		"--baseURL", c.url, "--bind", c.hub.env["HUGO_BIND"], "--port", c.id, "--source", c.hub.env["HUGO_SOURCE"])
 
 	if err := cmd.Start(); err != nil {
